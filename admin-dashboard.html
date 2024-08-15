@@ -211,7 +211,7 @@
             });
     
             const data = await response.json();
-            console.log('Fetched Data:', data); // Debugging line
+            console.log('Fetched Data:', data);
             return data;
         }
     
@@ -228,68 +228,78 @@
             try {
                 const data = await makeRequest('getTeamsAndStations');
                 const teamCardsContainer = document.getElementById('teamCardsContainer');
-                teamCardsContainer.innerHTML = ''; // Clear existing content
+                const teamLeaderSelect = document.getElementById('teamLeaderSelect');
+                teamCardsContainer.innerHTML = '';
+                teamLeaderSelect.innerHTML = '<option value="">Choose a team leader</option>';
         
                 if (!data.success) {
                     alert(data.message || 'Failed to load team data');
                     return;
                 }
         
-                // Ensure data.teamData is always an array
-                const teams = Array.isArray(data.teamData) ? data.teamData : [data.teamData];
+                // Handle teamSelectData
+                if (data.teamSelectData && Array.isArray(data.teamSelectData)) {
+                    data.teamSelectData.forEach(teamLeader => {
+                        const option = document.createElement('option');
+                        option.value = teamLeader;
+                        option.textContent = teamLeader;
+                        teamLeaderSelect.appendChild(option);
+                    });
+                }
         
-                teams.forEach(team => {
-                    // Create a card for each team
-                    const card = document.createElement('div');
-                    card.className = 'team-card';
-        
-                    const currentStationName = team.stationName;
-                    const pointsNeeded = team.pointsMessage === "Points needed to be added";
-        
-                    let cardContent = `
-                        <h2>Team Leader: ${team.teamLeader}</h2>
-                        <p>Current Station: ${currentStationName}</p>
-                        <p>Points Status: ${team.pointsMessage}</p>
-                    `;
-        
-                    if (pointsNeeded) {
-                        cardContent += `
-                            <input type="number" id="points-${team.teamLeader}" name="points" min="0" placeholder="Enter points for ${currentStationName}" />
-                            <button id="submitPoints-${team.teamLeader}">Submit Points</button>
+                // Handle teamData
+                if (data.teamData && Array.isArray(data.teamData)) {
+                    data.teamData.forEach(team => {
+                        const card = document.createElement('div');
+                        card.className = 'team-card';
+            
+                        const currentStationName = team.stationName;
+                        const pointsNeeded = team.pointsMessage === "Points needed to be added";
+            
+                        let cardContent = `
+                            <h2>Team Leader: ${team.teamLeader}</h2>
+                            <p>Current Station: ${currentStationName}</p>
+                            <p>Points Status: ${team.pointsMessage}</p>
                         `;
-                    }
-        
-                    card.innerHTML = cardContent;
-                    teamCardsContainer.appendChild(card);
-        
-                    // Attach event listener to the submit button
-                    if (pointsNeeded) {
-                        document.getElementById(`submitPoints-${team.teamLeader}`).addEventListener('click', async function () {
-                            const pointsValue = document.getElementById(`points-${team.teamLeader}`).value;
-                            if (pointsValue === '' || pointsValue <= 0) {
-                                alert('Please enter a valid number of points');
-                                return;
-                            }
-                            showLoading();
-                            try {
-                                const data = await makeRequest('addPoints', {
-                                    teamLeader: team.teamLeader,
-                                    points: pointsValue
-                                });
-                                if (data.success) {
-                                    alert('Points added successfully');
-                                    loadOptions(); // Refresh data
-                                } else {
-                                    alert('Failed to add points');
+            
+                        if (pointsNeeded) {
+                            cardContent += `
+                                <input type="number" id="points-${team.teamLeader}" name="points" min="0" placeholder="Enter points for ${currentStationName}" />
+                                <button id="submitPoints-${team.teamLeader}">Submit Points</button>
+                            `;
+                        }
+            
+                        card.innerHTML = cardContent;
+                        teamCardsContainer.appendChild(card);
+            
+                        if (pointsNeeded) {
+                            document.getElementById(`submitPoints-${team.teamLeader}`).addEventListener('click', async function () {
+                                const pointsValue = document.getElementById(`points-${team.teamLeader}`).value;
+                                if (pointsValue === '' || pointsValue <= 0) {
+                                    alert('Please enter a valid number of points');
+                                    return;
                                 }
-                            } catch (error) {
-                                alert('Error adding points: ' + error.message);
-                            } finally {
-                                hideLoading();
-                            }
-                        });
-                    }
-                });
+                                showLoading();
+                                try {
+                                    const data = await makeRequest('addPoints', {
+                                        teamLeader: team.teamLeader,
+                                        points: pointsValue
+                                    });
+                                    if (data.success) {
+                                        alert('Points added successfully');
+                                        loadOptions();
+                                    } else {
+                                        alert('Failed to add points');
+                                    }
+                                } catch (error) {
+                                    alert('Error adding points: ' + error.message);
+                                } finally {
+                                    hideLoading();
+                                }
+                            });
+                        }
+                    });
+                }
             } catch (error) {
                 alert('Error loading data: ' + error.message);
             } finally {
@@ -297,7 +307,33 @@
             }
         }
     
-        document.addEventListener('DOMContentLoaded', loadOptions);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadOptions();
+
+            document.getElementById('addTeamLeader').addEventListener('click', async () => {
+                const selectedTeamLeader = document.getElementById('teamLeaderSelect').value;
+                if (selectedTeamLeader) {
+                    showLoading();
+                    try {
+                        const data = await makeRequest('addTeamLeader', {
+                            teamLeader: selectedTeamLeader
+                        });
+                        if (data.success) {
+                            alert('Team leader added successfully');
+                            loadOptions(); // Refresh data
+                        } else {
+                            alert('Failed to add team leader');
+                        }
+                    } catch (error) {
+                        alert('Error adding team leader: ' + error.message);
+                    } finally {
+                        hideLoading();
+                    }
+                } else {
+                    alert('Please select a team leader');
+                }
+            });
+        });
     </script>
 </body>
 </html>
