@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leader Dashboard</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #333333; /* Navy blue background */
+            padding: 15px 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            color: #ffffff; /* White text color */
+        }
+
+        #logo {
+            width: 100px;
+            height: auto;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            border: 8px solid #e0e0e0;
+            border-top: 8px solid #b01116;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: calc(100vh - 60px);
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        section {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 100%;
+            max-width: 600px;
+            margin: 10px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        h1 {
+            color: #b01116;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #b01116;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: #b01116;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #a00e13;
+            transform: scale(1.05);
+        }
+
+        button:focus {
+            outline: none;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            text-align: left;
+            width: 100%;
+        }
+
+        input {
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 30px;
+            font-size: 14px;
+            width: calc(100% - 22px); /* Adjust width to fit within padding */
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #b01116;
+            outline: none;
+        }
+
+        .team-member {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .team-member input {
+            margin-right: 10px;
+        }
+
+        .team-member button {
+            background-color: #e74c3c;
+        }
+
+        .team-member button:hover {
+            background-color: #c0392b;
+        }
+
+        /* Style for the main tournament info container */
+        .tournament-info-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Style for the row containing two bubbles */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        /* Style for each bubble */
+        .info-bubble {
+            flex: 1;
+            margin: 0 10px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+            font-size: 16px;
+            text-align: center;
+        }
+
+        /* Additional style for the next clue bubble */
+        .next-clue-bubble {
+            margin-top: 20px;
+        }
+
+        /* Style for the answer input and submit button container */
+        .answer-field-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Style for the answer input field */
+        .answer-input {
+            width: calc(100% - 22px); /* Full width minus padding */
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        /* Style for the no info message */
+        .no-info-message {
+            text-align: center;
+            color: #888;
+            font-size: 18px;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <img id="logo" src="https://www.rsu.lv/sites/default/files/imce/logos/isared1.png" alt="Logo">
+        <h1>Leader Dashboard</h1>
+    </header>
+
+    <main>
+        <section>
+            <h2>Welcome, <span id="username"></span>!</h2>
+        </section>
+
+        <section id="teamContainer">
+            <!-- Team members will be dynamically added here -->
+        </section>
+
+        <section>
+            <h2>Add New Team Member</h2>
+            <div>
+                <input type="text" id="newTeamMember" placeholder="Enter name">
+                <button id="addMemberButton">Add</button>
+            </div>
+        </section>
+
+        <section>
+            <h2>Tournament Info</h2>
+            <div id="tournamentInfo">
+                <!-- Tournament information will be displayed here -->
+            </div>
+        </section>
+    </main>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://isa-scavenger-761151e3e681.herokuapp.com';
+        let relevantTeam = [];
+        let username = sessionStorage.getItem('username');
+        let googleToken = sessionStorage.getItem('googleToken');
+    
+        async function getProxyToken(action) {
+            const response = await fetch(`${API_URL}/get_token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ script_id: 'main_script', action })
+            });
+            const data = await response.json();
+            if (data.token) return data.token;
+            throw new Error('Failed to get proxy token');
+        }
+    
+        async function makeRequest(action, additionalData = {}) {
+            const proxyToken = await getProxyToken(action);
+            const requestData = {
+                token: proxyToken,
+                action: action,
+                username: username,
+                googleToken: googleToken,
+                ...additionalData
+            };
+    
+            const response = await fetch(`${API_URL}/proxy`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            });
+    
+            return response.json();
+        }
+    
+        document.addEventListener('DOMContentLoaded', () => {
+            const role = sessionStorage.getItem('role');
+    
+            // Retrieve and parse relevantTeam from sessionStorage, default to empty array if not valid
+            const storedTeam = sessionStorage.getItem('relevantTeam');
+            console.log(storedTeam)
+            if (storedTeam) {
+                try {
+                    const parsedTeam = JSON.parse(storedTeam);
+    
+                    // Check if the parsed team is an array of strings or objects
+                    if (Array.isArray(parsedTeam)) {
+                        if (typeof parsedTeam[0] === 'string') {
+                            // If array of strings, convert to array of objects
+                            relevantTeam = parsedTeam.map(name => ({ name }));
+                        } else if (typeof parsedTeam[0] === 'object') {
+                            // If array of objects, use it directly
+                            relevantTeam = parsedTeam;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error parsing relevantTeam:', error);
+                }
+            }
+    
+            console.log(relevantTeam);
+    
+            if (role === 'Leader') {
+                document.getElementById('username').textContent = username;
+                displayTeamMembers(relevantTeam);
+                fetchTournamentInfo(username);
+            }
+    
+            // Add event listener for adding new team member
+            document.getElementById('addMemberButton').addEventListener('click', async () => {
+                const newMemberName = document.getElementById('newTeamMember').value.trim();
+                if (newMemberName) {
+                    try {
+                        const data = await makeRequest('addmember', { name: newMemberName });
+                        if (data.success) {
+                            relevantTeam.push({ name: newMemberName });
+                            sessionStorage.setItem('relevantTeam', JSON.stringify(relevantTeam));
+                            displayTeamMembers(relevantTeam);
+                        } else {
+                            console.error('Error adding member:', data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                    }
+    
+                    document.getElementById('newTeamMember').value = '';
+                }
+            });
+        });
+    
+        function displayTeamMembers(relevantTeam) {
+            const teamContainer = document.getElementById('teamContainer');
+            teamContainer.innerHTML = ''; // Clear previous content
+    
+            if (Array.isArray(relevantTeam) && relevantTeam.length === 0) {
+                const message = document.createElement('p');
+                message.textContent = 'Please add more';
+                message.style.color = '#888'; // Optional: style the message for better visibility
+                teamContainer.appendChild(message);
+            } else {
+                relevantTeam.forEach((member, index) => {
+                    const memberDiv = document.createElement('div');
+                    memberDiv.className = 'team-member';
+    
+                    const memberInput = document.createElement('input');
+                    memberInput.type = 'text';
+                    memberInput.value = member.name || '';
+    
+                    // Update member's name and notify backend on change
+                    memberInput.addEventListener('change', () => {
+                        member.name = memberInput.value.trim();
+                        sessionStorage.setItem('relevantTeam', JSON.stringify(relevantTeam));
+                        updateBackend(relevantTeam);
+                    });
+                    
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.addEventListener('click', () => {
+                        relevantTeam.splice(index, 1);
+                        sessionStorage.setItem('relevantTeam', JSON.stringify(relevantTeam));
+                        updateBackend(relevantTeam);
+                        displayTeamMembers(relevantTeam);
+                    });
+    
+                    memberDiv.appendChild(memberInput);
+                    memberDiv.appendChild(deleteButton);
+                    teamContainer.appendChild(memberDiv);
+                });
+            }
+        }
+    
+        // Function to send the updated team to the backend
+        async function updateBackend(relevantTeam) {
+            try {
+                const data = await makeRequest('updateTeam', { team: relevantTeam });
+                if (data.success) {
+                    console.log('Team updated successfully');
+                } else {
+                    console.error('Error updating team:', data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    
+        async function fetchTournamentInfo(username) {
+            const tournamentInfoDiv = document.getElementById('tournamentInfo');
+            tournamentInfoDiv.innerHTML = '<p>Tournament Loading...</p>';
+    
+            try {
+                const data = await makeRequest('getTournamentInfo');
+                if (data && data.currentStation && data.numberOfStationsDone && data.nextClue) {
+                    displayTournamentInfo(data);
+                } else {
+                    const message = document.createElement('p');
+                    tournamentInfoDiv.innerHTML = ''; // Clear previous content
+                    message.textContent = data.message;
+                    message.className = 'no-info-message'; // Add a class for styling
+                    tournamentInfoDiv.appendChild(message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    
+        function displayTournamentInfo(tournamentInfo) {
+            const tournamentInfoDiv = document.getElementById('tournamentInfo');
+            tournamentInfoDiv.innerHTML = ''; // Clear previous content
+    
+            if (tournamentInfo) {
+                // Create a container for the info
+                const infoContainer = document.createElement('div');
+                infoContainer.className = 'tournament-info-container';
+    
+                const refreshButton = document.createElement('button');
+                refreshButton.className = 'refresh-button';
+                refreshButton.textContent = '🔄';
+                refreshButton.title = 'Refresh';
+                refreshButton.onclick = () => fetchTournamentInfo(username);
+                infoContainer.appendChild(refreshButton);
+    
+                // Create and append the stations done and current station bubbles
+                const topRow = document.createElement('div');
+                topRow.className = 'info-row';
+    
+                const numberOfStationsDoneDiv = document.createElement('div');
+                numberOfStationsDoneDiv.className = 'info-bubble';
+                numberOfStationsDoneDiv.innerHTML = `<strong>Stations Done:</strong> ${tournamentInfo.numberOfStationsDone}`;
+                topRow.appendChild(numberOfStationsDoneDiv);
+    
+                const currentStationDiv = document.createElement('div');
+                currentStationDiv.className = 'info-bubble';
+                currentStationDiv.innerHTML = `<strong>Current Station:</strong> ${tournamentInfo.currentStation}`;
+                topRow.appendChild(currentStationDiv);
+    
+                infoContainer.appendChild(topRow);
+    
+                // Create and append the next clue bubble
+                const nextClueDiv = document.createElement('div');
+                nextClueDiv.className = 'info-bubble next-clue-bubble';
+                nextClueDiv.innerHTML = `<strong>Next Clue:</strong> ${tournamentInfo.nextClue}`;
+                infoContainer.appendChild(nextClueDiv);
+    
+                // Create and append the text field and submit button
+                const answerFieldDiv = document.createElement('div');
+                answerFieldDiv.className = 'info-item answer-field-container';
+                const answerInput = document.createElement('input');
+                answerInput.type = 'text';
+                answerInput.id = 'answerInput';
+                answerInput.placeholder = 'Enter your answer here';
+                answerInput.className = 'answer-input';
+                const submitButton = document.createElement('button');
+                submitButton.id = 'submitAnswer';
+                submitButton.textContent = 'Submit Answer';
+                submitButton.className = 'submit-button';
+    
+                submitButton.addEventListener('click', () => {
+                    const answer = answerInput.value;
+                    if (answer.trim() === '') {
+                        alert('Please enter an answer.');
+                        return;
+                    }
+                    submitAnswer(username, answer, tournamentInfo.nextClue);
+                });
+    
+                answerFieldDiv.appendChild(answerInput);
+                answerFieldDiv.appendChild(submitButton);
+                infoContainer.appendChild(answerFieldDiv);
+    
+                // Append the info container to the main div
+                tournamentInfoDiv.appendChild(infoContainer);
+            } 
+        }
+    
+        async function submitAnswer(username, answer, clue) {
+            try {
+                const data = await makeRequest('submitAnswer', { answer, clue });
+                console.log('Response Data:', data);
+                if (data.success) {
+                    alert('Answer submitted successfully!');
+                    fetchTournamentInfo(username);
+                } else {
+                    alert('Error submitting answer: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

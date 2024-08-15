@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Points Management</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #333333;
+            padding: 15px 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #logo {
+            width: 100px;
+            height: auto;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            border: 8px solid #e0e0e0;
+            border-top: 8px solid #b01116;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: calc(100vh - 60px);
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .team-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+            margin: 10px;
+            text-align: center;
+        }
+
+        .team-card.hidden {
+            display: none;
+        }
+
+        h1 {
+            color: #b01116;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #b01116;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #a00e13;
+            transform: scale(1.05);
+        }
+
+        button:focus {
+            outline: none;
+        }
+
+        input, select {
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 30px;
+            font-size: 14px;
+            width: calc(100% - 22px); /* Adjust width to fit within padding */
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: #b01116;
+            outline: none;
+        }
+
+        select {
+            -webkit-appearance: none; /* Remove default styling in WebKit browsers */
+            -moz-appearance: none; /* Remove default styling in Firefox */
+            appearance: none; /* Remove default styling in other browsers */
+            background-color: #ffffff;
+            background-image: linear-gradient(45deg, transparent 50%, #b01116 50%),
+                              linear-gradient(135deg, #b01116 50%, transparent 50%);
+            background-position: right 10px center;
+            background-repeat: no-repeat;
+            background-size: 12px 12px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img id="logo" src="https://www.rsu.lv/sites/default/files/imce/logos/isared1.png" alt="Logo">
+        <h1>Admin Points Management</h1>
+    </header>
+    
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <main id="teamCardsContainer">
+        <!-- Team cards will be dynamically inserted here -->
+    </main>
+
+    <script>
+        const API_URL = 'https://isa-scavenger-761151e3e681.herokuapp.com';
+        const username = sessionStorage.getItem('username');
+        const googleToken = sessionStorage.getItem('googleToken');
+    
+        async function getProxyToken(action) {
+            const response = await fetch(`${API_URL}/get_token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ script_id: 'main_script', action })
+            });
+            const data = await response.json();
+            if (data.token) return data.token;
+            throw new Error('Failed to get proxy token');
+        }
+    
+        async function makeRequest(action, additionalData = {}) {
+            const proxyToken = await getProxyToken(action);
+            const requestData = {
+                token: proxyToken,
+                action: action,
+                username: username,
+                googleToken: googleToken,
+                ...additionalData
+            };
+    
+            const response = await fetch(`${API_URL}/proxy`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            });
+    
+            const data = await response.json();
+            console.log('Fetched Data:', data); // Debugging line
+            return data;
+        }
+    
+        function showLoading() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+    
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+    
+        async function loadOptions() {
+            showLoading();
+            try {
+                const data = await makeRequest('getTeamsAndStations');
+                const teamCardsContainer = document.getElementById('teamCardsContainer');
+                teamCardsContainer.innerHTML = ''; // Clear existing content
+
+                // Ensure data.teams is always an array
+                const teams = Array.isArray(data.teams) ? data.teams : [data.teams];
+
+                teams.forEach(team => {
+                    const status = JSON.parse(team.status);
+                    const points = JSON.parse(team.points);
+
+                    // Create a card for each team
+                    const card = document.createElement('div');
+                    card.className = 'team-card';
+
+                    let cardContent = `
+                        <h2>Team Leader: ${team.teamLeader}</h2>
+                        <p>Current Station: ${status.currentStation || 'No station assigned'}</p>
+                    `;
+
+                    if (status.currentStation != null) {
+                        if (!points || Object.keys(points).length === 0) {
+                            cardContent += `
+                                <input type="number" id="points-${team.teamLeader}" name="points" min="0" placeholder="Enter points for station ${status.currentStation}" />
+                                <button id="submitPoints-${team.teamLeader}">Submit Points</button>
+                            `;
+                        } else {
+                            cardContent += `
+                                <p>Points already assigned</p>
+                            `;
+                        }
+                    } else {
+                        cardContent += `<p>No current station available</p>`;
+                    }
+
+                    card.innerHTML = cardContent;
+                    teamCardsContainer.appendChild(card);
+
+                    // Attach event listener to the submit button
+                    if (status.currentStation != null && (!points || Object.keys(points).length === 0)) {
+                        document.getElementById(`submitPoints-${team.teamLeader}`).addEventListener('click', async function () {
+                            const pointsValue = document.getElementById(`points-${team.teamLeader}`).value;
+
+                            if (pointsValue === '' || pointsValue <= 0) {
+                                alert('Please enter a valid number of points');
+                                return;
+                            }
+
+                            showLoading();
+
+                            try {
+                                const data = await makeRequest('addPoints', {
+                                    teamLeader: team.teamLeader,
+                                    points: pointsValue
+                                });
+
+                                if (data.success) {
+                                    alert('Points added successfully');
+                                    loadOptions(); // Refresh data
+                                } else {
+                                    alert('Failed to add points');
+                                }
+                            } catch (error) {
+                                alert('Error adding points: ' + error.message);
+                            } finally {
+                                hideLoading();
+                            }
+                        });
+                    }
+                });
+            } catch (error) {
+                alert('Error loading data: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+    
+        document.addEventListener('DOMContentLoaded', loadOptions);
+    </script>
+</body>
+</html>

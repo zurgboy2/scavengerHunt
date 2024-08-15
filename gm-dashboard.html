@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Page</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #333333;
+            padding: 15px 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #logo {
+            width: 100px;
+            height: auto;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            border: 8px solid #e0e0e0;
+            border-top: 8px solid #b01116;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: calc(100vh - 60px);
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        section {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 100%;
+            max-width: 350px;
+            margin: 10px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        h1 {
+            color: #b01116;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #b01116;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #a00e13;
+            transform: scale(1.05);
+        }
+
+        button:focus {
+            outline: none;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            text-align: left;
+            width: 100%;
+        }
+
+        input, select {
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 30px;
+            font-size: 14px;
+            width: calc(100% - 22px); /* Adjust width to fit within padding */
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: #b01116;
+            outline: none;
+        }
+
+        select {
+            -webkit-appearance: none; /* Remove default styling in WebKit browsers */
+            -moz-appearance: none; /* Remove default styling in Firefox */
+            appearance: none; /* Remove default styling in other browsers */
+            background-color: #ffffff;
+            background-image: linear-gradient(45deg, transparent 50%, #b01116 50%),
+                              linear-gradient(135deg, #b01116 50%, transparent 50%);
+            background-position: right 10px center;
+            background-repeat: no-repeat;
+            background-size: 12px 12px;
+            cursor: pointer;
+        }
+
+        #event-info, #participants-list {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #event-info h2, #participants-list h2 {
+            color: #b01116;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        #event-info ul, #participants-list div {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #event-info li, #participants-list div {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        #event-info li strong, #participants-list p strong {
+            color: #b01116;
+        }
+
+        #stations-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .station-entry {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .station-entry hr {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 10px 0;
+        }
+
+        .input-field {
+            width: calc(100% - 22px);
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <img id="logo" src="https://www.rsu.lv/sites/default/files/imce/logos/isared1.png" alt="Logo">
+    </header>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <main>
+        <section id="event-section">
+            <h1>Event Details</h1>
+            <div id="event-info">
+                <button id="toggle-status-btn" class="btn">Toggle Status</button>
+                <!-- Event details will be displayed here -->
+            </div>
+        </section>
+
+        <section id="participants-section" class="hidden">
+            <h1>Participants</h1>
+            <div id="participants-list">
+                <!-- Participants will be listed here -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let googleToken = sessionStorage.getItem('googleToken');
+        let username = sessionStorage.getItem('username');
+        const API_URL = 'https://isa-scavenger-761151e3e681.herokuapp.com'; // Update with your URL
+8
+        async function getProxyToken(action) {
+            const response = await fetch(`${API_URL}/get_token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ script_id: 'main_script', action })
+            });
+            const data = await response.json();
+            if (data.token) return data.token;
+            throw new Error('Failed to get proxy token');
+        }
+
+        async function makeRequest(action, data) {
+            const proxyToken = await getProxyToken(action);
+            const response = await fetch(`${API_URL}/proxy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    token: proxyToken, 
+                    action: action, 
+                    data: data,
+                    googleToken: googleToken,
+                    username: username
+                })
+            });
+            return response.json();
+        }
+    
+        function showLoading() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+    
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+    
+        async function fetchData() {
+            showLoading();
+            try {
+                const data = await makeRequest('getEventForAdmin', { username, googleToken: googleToken });
+                if (data.success) {
+                    processEventDetails(data.event);
+                    processParticipants(data.participants);
+                } else {
+                    console.error('Error fetching data:', data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+    
+        function processEventDetails(event) {
+            if (event) {
+                sessionStorage.setItem('event', JSON.stringify(event));
+                const eventInfo = document.getElementById('event-info');
+                const stations = JSON.parse(event.stations) || [];
+    
+                eventInfo.innerHTML = `
+                    <p><strong>Event Name:</strong> <input type="text" id="event-name" class="input-field" value="${event.eventSheetName}" /></p>
+                    <p><strong>Stations:</strong></p>
+                    <div id="stations-container">
+                        ${stations.length > 0 ? stations.map((station, index) => `
+                            <div class="station-entry" data-index="${index}">
+                                <p><strong>Station Number:</strong> <input type="number" class="input-field" value="${station.stationNumber}" /></p>
+                                <p><strong>Station Name:</strong> <input type="text" class="input-field" value="${station.stationName}" /></p>
+                                <p><strong>Clue:</strong> <input type="text" class="input-field" value="${station.clue}" /></p>
+                                <p><strong>Answer:</strong> <input type="text" class="input-field" value="${station.answer}" /></p>
+                                <button class="delete-station-btn">Delete Station</button>
+                                <hr>
+                            </div>
+                        `).join('') : '<p>No stations added yet. Click "Add Station" to create one.</p>'}
+                    </div>
+                    <button id="add-station-btn" class="btn">Add Station</button>
+                    <button id="save-event-btn" class="btn">Save Changes</button>
+                `;
+    
+                setupEventListeners(event);
+            }
+        }
+    
+        function setupEventListeners(event) {
+            document.getElementById('add-station-btn').onclick = addStation;
+            document.getElementById('stations-container').addEventListener('click', handleStationDelete);
+            document.getElementById('save-event-btn').onclick = () => saveEventChanges(event);
+    
+            let statusButton = document.getElementById('toggle-status-btn');
+            if (!statusButton) {
+                statusButton = document.createElement('button');
+                statusButton.id = 'toggle-status-btn';
+                statusButton.className = 'btn';
+                document.getElementById('event-info').appendChild(statusButton);
+            }
+            statusButton.textContent = event.status === 'Closed' ? 'Open the Hunt' : 'Close the Hunt';
+            statusButton.onclick = () => toggleEventStatus(event);
+        }
+    
+        function addStation() {
+            const stationsContainer = document.getElementById('stations-container');
+            const newStationIndex = stationsContainer.querySelectorAll('.station-entry').length;
+            const newStationHtml = `
+                <div class="station-entry" data-index="${newStationIndex}">
+                    <p><strong>Station Number:</strong> <input type="number" class="input-field" value="${newStationIndex + 1}" /></p>
+                    <p><strong>Station Name:</strong> <input type="text" class="input-field" value="" /></p>
+                    <p><strong>Clue:</strong> <input type="text" class="input-field" value="" /></p>
+                    <p><strong>Answer:</strong> <input type="text" class="input-field" value="" /></p>
+                    <button class="delete-station-btn">Delete Station</button>
+                    <hr>
+                </div>
+            `;
+            stationsContainer.insertAdjacentHTML('beforeend', newStationHtml);
+            updateStationIndexes();
+        }
+    
+        function handleStationDelete(event) {
+            if (event.target.classList.contains('delete-station-btn')) {
+                event.target.closest('.station-entry').remove();
+                updateStationIndexes();
+            }
+        }
+    
+        function updateStationIndexes() {
+            document.querySelectorAll('#stations-container .station-entry').forEach((entry, index) => {
+                entry.setAttribute('data-index', index);
+                entry.querySelector('input[type="number"]').value = index + 1;
+            });
+        }
+    
+        async function toggleEventStatus(event) {
+            showLoading();
+            const statusButton = document.getElementById('toggle-status-btn');
+            const currentStatus = statusButton.textContent;
+            const newStatus = currentStatus === 'Open the Hunt' ? 'Open' : 'Closed';
+    
+            try {
+                const data = await makeRequest('updateEventStatus', {
+                    username,
+                    event: event.eventSheetName,
+                    status: newStatus,
+                    googleToken: googleToken
+                });
+    
+                if (data.success) {
+                    statusButton.textContent = newStatus === 'Closed' ? 'Open the Hunt' : 'Close the Hunt';
+                    alert('Event status updated successfully!');
+                    hideLoading();
+                    fetchData();
+                } else {
+                    console.error('Error updating status:', data.message);
+                    hideLoading();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                hideLoading();
+            }
+        }
+    
+        async function saveEventChanges(event) {
+            const updatedStations = Array.from(document.querySelectorAll('#stations-container .station-entry')).map(entry => {
+                const inputs = entry.querySelectorAll('input');
+                return {
+                    stationNumber: parseInt(inputs[0].value),
+                    stationName: inputs[1].value,
+                    clue: inputs[2].value,
+                    answer: inputs[3].value
+                };
+            });
+    
+            const updatedEvent = {
+                eventSheetName: document.getElementById('event-name').value,
+                stations: JSON.stringify(updatedStations)
+            };
+    
+            try {
+                const data = await makeRequest('updateEventDetails', {
+                    username,
+                    eventdetails: updatedEvent,
+                    eventName: event.eventSheetName,
+                    googleToken: googleToken
+                });
+    
+                if (data.success) {
+                    alert('Event details updated successfully!');
+                    fetchData(); // Refresh data to reflect changes
+                } else {
+                    console.error('Error updating event details:', data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    
+        function processParticipants(participants) {
+            const participantsList = document.getElementById('participants-list');
+            const participantsSection = document.getElementById('participants-section');
+
+            if (participants && participants.length > 0) {
+                sessionStorage.setItem('participants', JSON.stringify(participants));
+                participants.forEach(participant => {
+                    participant.status = JSON.parse(participant.status);
+                });
+
+                const participantsHTML = participants.map(participant => `
+                    <div>
+                        <p><strong>Team Leader:</strong> ${participant.teamLeader}</p>
+                        <p><strong>Status:</strong> 
+                            Current Station: ${participant.status.currentStation}, 
+                            Number of Stations Done: ${participant.status.numberOfStationsDone}
+                        </p>
+                        <p><strong>Points:</strong> ${participant.points}</p>
+                        <p><strong>Admin:</strong> ${participant.admin}</p>
+                    </div>
+                `).join('');
+                participantsList.innerHTML = participantsHTML;
+            } else {
+                participantsList.innerHTML = '<p>Event not started yet for there to be any participants</p>';
+            }
+            
+            participantsSection.classList.remove('hidden');
+        }
+    
+        // Call the fetchData function to populate the page
+        fetchData();
+    </script>
+</body>
+</html>

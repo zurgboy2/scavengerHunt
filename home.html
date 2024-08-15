@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scavenger Hunt</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #333333;
+            padding: 15px 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        #logo {
+            width: 100px;
+            height: auto;
+        }
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .spinner {
+            border: 8px solid #e0e0e0;
+            border-top: 8px solid #b01116;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: calc(100vh - 60px);
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        section {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 100%;
+            max-width: 350px;
+            margin: 10px;
+            text-align: center;
+        }
+        .hidden { display: none; }
+        h1 {
+            color: #b01116;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #b01116;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background-color: #a00e13;
+            transform: scale(1.05);
+        }
+        button:focus { outline: none; }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label {
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            text-align: left;
+            width: 100%;
+        }
+        input, select {
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 30px;
+            font-size: 14px;
+            width: calc(100% - 22px);
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            border-color: #b01116;
+            outline: none;
+        }
+        select {
+            appearance: none;
+            background-color: #ffffff;
+            background-image: linear-gradient(45deg, transparent 50%, #b01116 50%),
+                              linear-gradient(135deg, #b01116 50%, transparent 50%);
+            background-position: right 10px center;
+            background-repeat: no-repeat;
+            background-size: 12px 12px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="https://www.rsu.lv/sites/default/files/imce/logos/isared1.png" alt="Logo" id="logo">
+    </header>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+    <main>
+        <section id="auth-section">
+            <button id="show-login">Login</button>
+            <button id="show-register">Register</button>
+            
+            <div id="login-section" class="hidden">
+                <h1>Login</h1>
+                <form id="login-form">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+            <div id="create-account-section" class="hidden">
+                <h1>Create Account</h1>
+                <form id="create-account-form">
+                    <label for="new-username">Username:</label>
+                    <input type="text" id="new-username" name="username" required>
+                    <label for="new-password">Password:</label>
+                    <input type="password" id="new-password" name="password" required>
+                    <label for="event-selection">Select Event:</label>
+                    <select id="event-selection" name="event" required>
+                        <option value="" disabled selected>Choose an event</option>
+                    </select>
+                    <button type="button" id="create-account-button">Create Account</button>
+                </form>
+            </div>
+        </section>
+    </main>
+    <script>
+        const API_URL = 'https://isa-scavenger-761151e3e681.herokuapp.com';
+
+        async function getToken(action) {
+            const response = await fetch(`${API_URL}/get_token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ script_id: 'main_script', action })
+            });
+            const data = await response.json();
+            if (data.token) return data.token;
+            throw new Error('Failed to get token');
+        }
+
+        async function makeRequest(action, data) {
+            const token = await getToken(action);
+            const response = await fetch(`${API_URL}/proxy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, action, ...data })
+            });
+            return response.json();
+        }
+
+        function showLoadingOverlay() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+
+        function hideLoadingOverlay() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+        function handleUserRole(role, relevantTeam, username, googleToken) {
+            sessionStorage.setItem('role', role);
+            sessionStorage.setItem('username', username);
+            sessionStorage.setItem('relevantTeam', relevantTeam);
+            sessionStorage.setItem('googleToken', googleToken);
+
+            const roleMappings = {
+                'Leader': 'leader-dashboard.html',
+                'Admin': 'admin-dashboard.html',
+                'GrandMaster': 'gm-dashboard.html'
+            };
+            window.location.href = roleMappings[role] || 'home.html';
+        }
+
+        async function populateEventOptions() {
+            try {
+                showLoadingOverlay();
+                const data = await makeRequest('getEvents', {});
+                if (data && data.events) {
+                    const eventSelection = document.getElementById('event-selection');
+                    eventSelection.innerHTML = '<option value="" disabled selected>Choose an event</option>';
+                    data.events.forEach(event => {
+                        const option = document.createElement('option');
+                        option.textContent = event.name;
+                        option.value = event.name;
+                        eventSelection.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching events:', error);
+                alert('Error fetching events. Please try again.');
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginButton = document.getElementById('show-login');
+            const registerButton = document.getElementById('show-register');
+            const loginSection = document.getElementById('login-section');
+            const registerSection = document.getElementById('create-account-section');
+            const createAccountButton = document.getElementById('create-account-button');
+            const loginForm = document.getElementById('login-form');
+            
+            loginButton.addEventListener('click', () => {
+                loginSection.classList.remove('hidden');
+                registerSection.classList.add('hidden');
+            });
+    
+            registerButton.addEventListener('click', () => {
+                registerSection.classList.remove('hidden');
+                loginSection.classList.add('hidden');
+            });
+    
+            createAccountButton.addEventListener('click', async function() {
+                const username = document.getElementById('new-username').value;
+                const password = document.getElementById('new-password').value;
+                const event = document.getElementById('event-selection').value;
+    
+                try {
+                    showLoadingOverlay();
+                    const data = await makeRequest('createAccount', { username, password, event });
+                    if (data.success) {
+                        alert('Account created successfully!');
+                        document.getElementById('create-account-form').reset();
+                        loginSection.classList.remove('hidden');
+                        registerSection.classList.add('hidden');
+                    } else {
+                        alert('Error creating account: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while creating the account.');
+                } finally {
+                    hideLoadingOverlay();
+                }
+            });
+    
+            loginForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                try {
+                    showLoadingOverlay();
+                    const data = await makeRequest('login', { username, password });
+                    if (data.success) {
+                        alert('Login successful!');
+                        handleUserRole(data.role, data.relevantTeam, data.username, data.googleToken);
+                    } else {
+                        alert('Error logging in: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while logging in.');
+                } finally {
+                    hideLoadingOverlay();
+                }
+            });
+    
+            populateEventOptions();
+        });
+    </script>
+</body>
+</html>
