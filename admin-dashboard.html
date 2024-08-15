@@ -206,32 +206,24 @@
                     return;
                 }
         
-                // Ensure data.teams is always an array
-                const teams = Array.isArray(data.teams) ? data.teams : [data.teams];
+                // Ensure data.teamData is always an array
+                const teams = Array.isArray(data.teamData) ? data.teamData : [data.teamData];
         
                 teams.forEach(team => {
-                    // Parse the status and points JSON strings
-                    const status = JSON.parse(team.status);
-                    const points = JSON.parse(team.points);
-        
                     // Create a card for each team
                     const card = document.createElement('div');
                     card.className = 'team-card';
         
-                    // Determine the current station name (you may need to adjust this based on your station naming convention)
-                    const currentStationName = `Station ${status.stationName}`;
-        
-                    // Determine if points have been added for the current station
-                    const pointsAdded = Object.keys(points).includes(currentStationName);
-                    const pointsMessage = pointsAdded ? "Points already added" : "Points needed to be added";
+                    const currentStationName = team.stationName;
+                    const pointsNeeded = team.pointsMessage === "Points needed to be added";
         
                     let cardContent = `
                         <h2>Team Leader: ${team.teamLeader}</h2>
                         <p>Current Station: ${currentStationName}</p>
-                        <p>Points Status: ${pointsMessage}</p>
+                        <p>Points Status: ${team.pointsMessage}</p>
                     `;
         
-                    if (!pointsAdded) {
+                    if (pointsNeeded) {
                         cardContent += `
                             <input type="number" id="points-${team.teamLeader}" name="points" min="0" placeholder="Enter points for ${currentStationName}" />
                             <button id="submitPoints-${team.teamLeader}">Submit Points</button>
@@ -242,7 +234,7 @@
                     teamCardsContainer.appendChild(card);
         
                     // Attach event listener to the submit button
-                    if (!pointsAdded) {
+                    if (pointsNeeded) {
                         document.getElementById(`submitPoints-${team.teamLeader}`).addEventListener('click', async function () {
                             const pointsValue = document.getElementById(`points-${team.teamLeader}`).value;
                             if (pointsValue === '' || pointsValue <= 0) {
