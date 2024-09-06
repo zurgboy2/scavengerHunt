@@ -296,7 +296,6 @@
     
             // Retrieve and parse relevantTeam from sessionStorage, default to empty array if not valid
             const storedTeam = sessionStorage.getItem('relevantTeam');
-            console.log(storedTeam)
             if (storedTeam) {
                 try {
                     const parsedTeam = JSON.parse(storedTeam);
@@ -316,7 +315,6 @@
                 }
             }
     
-            console.log(relevantTeam);
     
             if (role === 'Leader') {
                 document.getElementById('username').textContent = username;
@@ -389,14 +387,17 @@
     
         // Function to send the updated team to the backend
         async function updateBackend(relevantTeam) {
+            showLoadingOverlay()
             try {
                 const data = await makeRequest('updateTeam', { team: relevantTeam });
                 if (data.success) {
-                    console.log('Team updated successfully');
+                    hideLoadingOverlay();
                 } else {
+                    hideLoadingOverlay();
                     console.error('Error updating team:', data.message);
                 }
             } catch (error) {
+                hideLoadingOverlay();
                 console.error('Error:', error);
             }
         }
@@ -493,16 +494,25 @@
         async function submitAnswer(username, answer, clue) {
             try {
                 const data = await makeRequest('submitAnswer', { answer, clue });
-                console.log('Response Data:', data);
+                showLoadingOverlay()
                 if (data.success) {
-                    alert('Answer submitted successfully!');
+                    hideLoadingOverlay()
                     fetchTournamentInfo(username);
                 } else {
+                    hideLoadingOverlay()
                     alert('Error submitting answer: ' + data.message);
                 }
             } catch (error) {
                 console.error('Error:', error);
             }
+        }
+
+        function showLoadingOverlay() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+
+        function hideLoadingOverlay() {
+            document.getElementById('loading-overlay').style.display = 'none';
         }
     </script>
 </body>
